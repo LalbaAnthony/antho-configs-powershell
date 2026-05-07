@@ -1,4 +1,4 @@
-#  Configs PowerShell
+# Configs PowerShell
 
 Useful PowerShell aliases and functions to boost your productivity in the terminal.
 
