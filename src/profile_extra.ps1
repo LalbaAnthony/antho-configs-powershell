@@ -109,7 +109,7 @@ function gdrag {
 # Docker
 # =================================================================================
 
-function dcb      { docker-compose up --build -d }
+function dcb      { docker compose up --build -d }
 function dps      { docker ps }
 function dpa      { docker ps -a }
 function drm      { docker rm -f @args }
