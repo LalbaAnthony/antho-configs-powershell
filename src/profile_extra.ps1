@@ -116,8 +116,28 @@ function drm      { docker rm -f @args }
 function dim      { docker images }
 function dlog     { docker logs -f @args }
 function dclean   { docker system prune -af --volumes }
-function dexec    { docker exec -it $args[0] bash }
 function drestart { docker restart $(docker ps -q) }
+
+function dexec {
+    param($container)
+    if (-not $container) {
+        Write-Host "Usage: dexec <container_name_or_id>"
+        return
+    }
+
+    docker exec -it $container /bin/bash
+    if ($LASTEXITCODE -ne 0) { docker exec -it $container /bin/sh }
+}
+
+function denv {
+    param($container)
+    if (-not $container) {
+        Write-Host "Usage: denv <container_name_or_id>"
+        return
+    }
+
+    docker exec -it $container env
+}
 
 function dnuke {
     Write-Host "WARNING: This will destroy ALL Docker containers, images, volumes, networks, and build cache."
