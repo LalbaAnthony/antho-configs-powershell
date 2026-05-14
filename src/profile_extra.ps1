@@ -134,6 +134,7 @@ function dnuke {
     }
 
     docker stop $(docker ps -aq) 2>$null
+    docker volume rm $(docker volume ls -q) 2>$null
     docker system prune -a --volumes -f
     docker builder prune -a -f
 
