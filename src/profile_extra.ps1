@@ -19,6 +19,7 @@ function again { Invoke-History }
 function h     { Get-History -Count 30 }
 
 # PowerShell
+function pseu() { irm https://raw.githubusercontent.com/LalbaAnthony/antho-configs-powershell/main/install.ps1 | iex }
 function profile_extra_update() { irm https://raw.githubusercontent.com/LalbaAnthony/antho-configs-powershell/main/install.ps1 | iex }
 function profile_extra_uninstall() { irm https://raw.githubusercontent.com/LalbaAnthony/antho-configs-powershell/main/uninstall.ps1 | iex }
 
