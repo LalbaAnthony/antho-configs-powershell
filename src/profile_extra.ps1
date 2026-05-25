@@ -19,9 +19,9 @@ function again { Invoke-History }
 function h     { Get-History -Count 30 }
 
 # PowerShell
-function pseu() { irm https://raw.githubusercontent.com/LalbaAnthony/antho-configs-powershell/main/install.ps1 | iex }
-function profile_extra_update() { irm https://raw.githubusercontent.com/LalbaAnthony/antho-configs-powershell/main/install.ps1 | iex }
-function profile_extra_uninstall() { irm https://raw.githubusercontent.com/LalbaAnthony/antho-configs-powershell/main/uninstall.ps1 | iex }
+function pseu() { Invoke-RestMethod https://raw.githubusercontent.com/LalbaAnthony/antho-configs-powershell/main/install.ps1 | iex }
+function profile_extra_update() { Invoke-RestMethod https://raw.githubusercontent.com/LalbaAnthony/antho-configs-powershell/main/install.ps1 | iex }
+function profile_extra_uninstall() { Invoke-RestMethod https://raw.githubusercontent.com/LalbaAnthony/antho-configs-powershell/main/uninstall.ps1 | iex }
 
 function mkcd {
     param($path)
@@ -160,4 +160,131 @@ function dnuke {
     docker builder prune -a -f
 
     Write-Host "Docker environment wiped."
+}
+
+# =================================================================================
+# apitemplate.io
+# =================================================================================
+
+function mdtopdf {
+    param (
+        [Parameter(Mandatory = $true, Position = 0)]
+        [string] $File
+    )
+
+    # -- Config -----------------------------------------------------------------
+
+    $API_KEY = $env:APITEMPLATE_API_KEY
+    $TEMPLATE_ID = $env:APITEMPLATE_TEMPLATE_ID
+    $REGION = if ($env:APITEMPLATE_REGION) { $env:APITEMPLATE_REGION } else { 'us' }
+
+    $REGION_HOSTS = @{
+        us = 'rest.apitemplate.io'
+        de = 'rest-de.apitemplate.io'
+        au = 'rest-au.apitemplate.io'
+        sg = 'rest-sg.apitemplate.io'
+    }
+
+    # -- Guard: missing credentials ---------------------------------------------
+
+    if ([string]::IsNullOrWhiteSpace($API_KEY) -or [string]::IsNullOrWhiteSpace($TEMPLATE_ID)) {
+        Write-Host @"
+
+        mdtopdf — missing configuration
+        ----------------------------------------------------------------
+
+        Two environment variables are required:
+
+            APITEMPLATE_API_KEY     Your APITemplate.io API key
+            APITEMPLATE_TEMPLATE_ID A "Markdown String to PDF" template ID
+            APITEMPLATE_REGION      (optional) us | de | au | sg  [default: us]
+
+        -- Get your API key ----------------------------------------------
+
+            1. Sign up at https://app.apitemplate.io/accounts/signup/
+            2. Go to Dashboard → API Keys → copy your key
+
+        -- Create a compatible template ----------------------------------
+
+            1. Dashboard → Manage Templates → New PDF Template
+            2. Select "Markdown String to PDF" → Create
+            3. Copy the template_id shown in the template list
+
+        -- Set the variables permanently (PowerShell profile) ------------
+
+            Add these lines to your `$PROFILE  ($($PROFILE)):
+
+            `$env:APITEMPLATE_API_KEY     = "your_api_key_here"
+            `$env:APITEMPLATE_TEMPLATE_ID = "your_template_id_here"
+            `$env:APITEMPLATE_REGION      = "us"   # or de / au / sg
+
+            Then reload: . `$PROFILE
+
+        -- Or set them for the current session only ----------------------
+
+            `$env:APITEMPLATE_API_KEY     = "your_api_key_here"
+            `$env:APITEMPLATE_TEMPLATE_ID = "your_template_id_here"
+"@ -ForegroundColor Yellow
+
+        return
+    }
+
+    # -- Guard: invalid region --------------------------------------------------
+
+    if ($REGION -notin $REGION_HOSTS.Keys) {
+        Write-Error "Invalid APITEMPLATE_REGION '$REGION'. Must be: $($REGION_HOSTS.Keys -join ' | ')"
+        return
+    }
+
+    # -- Guard: file exists -----------------------------------------------------
+
+    if (-not (Test-Path $File -PathType Leaf)) {
+        Write-Error "File not found: $File"
+        return
+    }
+
+    # -- Paths ------------------------------------------------------------------
+
+    $resolved = (Resolve-Path $File).Path
+    $directory = Split-Path $resolved -Parent
+    $baseName = [System.IO.Path]::GetFileNameWithoutExtension($resolved)
+    $outputPath = Join-Path $directory "${baseName}_$(Get-Date -Format 'yyyy-MM-dd').pdf"
+    $createUrl = "https://$($REGION_HOSTS[$REGION])/v2/create-pdf?template_id=$TEMPLATE_ID"
+
+    # -- Convert ----------------------------------------------------------------
+
+    Write-Host "[1/3] Reading '$resolved'..."
+    $markdown = Get-Content -Path $resolved -Raw -Encoding UTF8
+
+    Write-Host "[2/3] Sending to APITemplate.io ($REGION)..."
+
+    try {
+        $response = Invoke-RestMethod `
+            -Method Post `
+            -Uri $createUrl `
+            -Headers @{ 'X-API-KEY' = $API_KEY; 'Content-Type' = 'application/json' } `
+            -Body (@{ markdown = $markdown } | ConvertTo-Json -Depth 5) `
+            -TimeoutSec 60
+    }
+    catch {
+        Write-Error "API request failed (HTTP $($_.Exception.Response?.StatusCode.value__)).`n$($_.ErrorDetails?.Message)"
+        return
+    }
+
+    if (-not $response.download_url) {
+        Write-Error "Unexpected API response (no download_url).`n$($response | ConvertTo-Json)"
+        return
+    }
+
+    Write-Host "[3/3] Saving '$outputPath'..."
+
+    try {
+        Invoke-WebRequest -Uri $response.download_url -OutFile $outputPath -TimeoutSec 60
+    }
+    catch {
+        Write-Error "Download failed: $_"
+        return
+    }
+
+    Write-Host "Done -> $outputPath ($([math]::Round((Get-Item $outputPath).Length / 1KB, 1)) KB)" -ForegroundColor Green
 }
