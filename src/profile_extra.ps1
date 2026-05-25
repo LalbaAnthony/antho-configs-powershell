@@ -174,9 +174,9 @@ function mdtopdf {
 
     # -- Config -----------------------------------------------------------------
 
-    $API_KEY = $env:APITEMPLATE_API_KEY
+    $API_KEY     = $env:APITEMPLATE_API_KEY
     $TEMPLATE_ID = $env:APITEMPLATE_TEMPLATE_ID
-    $REGION = if ($env:APITEMPLATE_REGION) { $env:APITEMPLATE_REGION } else { 'us' }
+    $REGION      = if ($env:APITEMPLATE_REGION) { $env:APITEMPLATE_REGION } else { 'us' }
 
     $REGION_HOSTS = @{
         us = 'rest.apitemplate.io'
@@ -190,40 +190,40 @@ function mdtopdf {
     if ([string]::IsNullOrWhiteSpace($API_KEY) -or [string]::IsNullOrWhiteSpace($TEMPLATE_ID)) {
         Write-Host @"
 
-    mdtopdf — missing configuration
-    ----------------------------------------------------------------
+  mdtopdf — missing configuration
+  ----------------------------------------------------------------
 
-    Two environment variables are required:
+  Two environment variables are required:
 
-        APITEMPLATE_API_KEY     Your APITemplate.io API key
-        APITEMPLATE_TEMPLATE_ID A "Markdown String to PDF" template ID
-        APITEMPLATE_REGION      (optional) us | de | au | sg  [default: us]
+    APITEMPLATE_API_KEY     Your APITemplate.io API key
+    APITEMPLATE_TEMPLATE_ID A "Markdown String to PDF" template ID
+    APITEMPLATE_REGION      (optional) us | de | au | sg  [default: us]
 
-    -- Get your API key ----------------------------------------------
+  -- Get your API key ----------------------------------------------
 
-        1. Sign up at https://app.apitemplate.io/accounts/signup/
-        2. Go to Dashboard → API Keys → copy your key
+    1. Sign up at https://app.apitemplate.io/accounts/signup/
+    2. Go to Dashboard → API Keys → copy your key
 
-    -- Create a compatible template ----------------------------------
+  -- Create a compatible template ----------------------------------
 
-        1. Dashboard → Manage Templates → New PDF Template
-        2. Select "Markdown String to PDF" → Create
-        3. Copy the template_id shown in the template list
+    1. Dashboard → Manage Templates → New PDF Template
+    2. Select "Markdown String to PDF" → Create
+    3. Copy the template_id shown in the template list
 
-    -- Set the variables permanently (PowerShell profile) ------------
+  -- Set the variables permanently (PowerShell profile) ------------
 
-        Add these lines to your `$PROFILE  ($($PROFILE)):
+    Add these lines to your `$PROFILE  ($($PROFILE)):
 
-        `$env:APITEMPLATE_API_KEY     = "your_api_key_here"
-        `$env:APITEMPLATE_TEMPLATE_ID = "your_template_id_here"
-        `$env:APITEMPLATE_REGION      = "us"   # or de / au / sg
+      `$env:APITEMPLATE_API_KEY     = "your_api_key_here"
+      `$env:APITEMPLATE_TEMPLATE_ID = "your_template_id_here"
+      `$env:APITEMPLATE_REGION      = "us"   # or de / au / sg
 
-        Then reload: . `$PROFILE
+    Then reload: . `$PROFILE
 
-    -- Or set them for the current session only ----------------------
+  -- Or set them for the current session only ----------------------
 
-        `$env:APITEMPLATE_API_KEY     = "your_api_key_here"
-        `$env:APITEMPLATE_TEMPLATE_ID = "your_template_id_here"
+      `$env:APITEMPLATE_API_KEY     = "your_api_key_here"
+      `$env:APITEMPLATE_TEMPLATE_ID = "your_template_id_here"
 
 "@ -ForegroundColor Yellow
         return
@@ -245,11 +245,11 @@ function mdtopdf {
 
     # -- Paths ------------------------------------------------------------------
 
-    $resolved = (Resolve-Path $File).Path
-    $directory = Split-Path $resolved -Parent
-    $baseName = [System.IO.Path]::GetFileNameWithoutExtension($resolved)
+    $resolved   = (Resolve-Path $File).Path
+    $directory  = Split-Path $resolved -Parent
+    $baseName   = [System.IO.Path]::GetFileNameWithoutExtension($resolved)
     $outputPath = Join-Path $directory "${baseName}_$(Get-Date -Format 'yyyy-MM-dd').pdf"
-    $createUrl = "https://$($REGION_HOSTS[$REGION])/v2/create-pdf?template_id=$TEMPLATE_ID"
+    $createUrl  = "https://$($REGION_HOSTS[$REGION])/v2/create-pdf?template_id=$TEMPLATE_ID"
 
     # -- Convert ----------------------------------------------------------------
 
@@ -265,10 +265,9 @@ function mdtopdf {
             -Headers @{ 'X-API-KEY' = $API_KEY; 'Content-Type' = 'application/json' } `
             -Body (@{ markdown = $markdown } | ConvertTo-Json -Depth 5) `
             -TimeoutSec 60
-    }
-    catch {
+    } catch {
         $statusCode = if ($_.Exception.Response) { [int]$_.Exception.Response.StatusCode } else { 'N/A' }
-        $detail = if ($_.ErrorDetails) { $_.ErrorDetails.Message } else { $_.Exception.Message }
+        $detail     = if ($_.ErrorDetails) { $_.ErrorDetails.Message } else { $_.Exception.Message }
         Write-Error "API request failed (HTTP $statusCode).`n$detail"
         return
     }
@@ -282,8 +281,7 @@ function mdtopdf {
 
     try {
         Invoke-WebRequest -Uri $response.download_url -OutFile $outputPath -TimeoutSec 60
-    }
-    catch {
+    } catch {
         Write-Error "Download failed: $_"
         return
     }
