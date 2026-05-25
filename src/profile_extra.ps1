@@ -167,7 +167,7 @@ function dnuke {
 # apitemplate.io
 # =================================================================================
 
-# https://apitemplate.io/blog/how-to-turn-markdown-into-pdfs/
+# ? Made using: https://apitemplate.io/blog/how-to-turn-markdown-into-pdfs/
 
 function mdtopdf {
     <#
@@ -193,40 +193,40 @@ function mdtopdf {
 
     if (-not $apiKey -or -not $templateId) {
         Write-Host @"
-  mdtopdf - missing configuration
-  ----------------------------------------------------------------
+    mdtopdf - missing configuration
+    ----------------------------------------------------------------
 
-  Two environment variables are required:
+    Two environment variables are required:
 
-    APITEMPLATE_API_KEY     Your APITemplate.io API key
-    APITEMPLATE_TEMPLATE_ID A "Markdown String to PDF" template ID
-    APITEMPLATE_REGION      (optional) us | de | au | sg  [default: us]
+        APITEMPLATE_API_KEY     Your APITemplate.io API key
+        APITEMPLATE_TEMPLATE_ID a "Markdown String to PDF" template ID
+        APITEMPLATE_REGION      (optional) us | de | au | sg  [default: us]
 
-  -- Get your API key ----------------------------------------------
+    -- Get your API key ----------------------------------------------
 
-    1. Sign up at https://app.apitemplate.io/accounts/signup/
-    2. Go to Dashboard → API Keys → copy your key
+        1. Sign up at https://app.apitemplate.io/accounts/signup/
+        2. Go to Dashboard → API Keys → copy your key
 
-  -- Create a compatible template ----------------------------------
+    -- Create a compatible template ----------------------------------
 
-    1. Dashboard → Manage Templates → New PDF Template
-    2. Select "Markdown String to PDF" → Create
-    3. Copy the template_id shown in the template list
+        1. Dashboard → Manage Templates → New PDF Template
+        2. Select "Markdown String to PDF" → Create
+        3. Copy the template_id shown in the template list
 
-  -- Set the variables permanently (PowerShell profile) ------------
+    -- Set the variables permanently (PowerShell profile) ------------
 
-    Add these lines to your `$PROFILE  ($($PROFILE)):
+        Add these lines to your `$PROFILE  ($($PROFILE)):
 
-      `$env:APITEMPLATE_API_KEY     = "your_api_key_here"
-      `$env:APITEMPLATE_TEMPLATE_ID = "your_template_id_here"
-      `$env:APITEMPLATE_REGION      = "us"   # or de / au / sg
+        `$env:APITEMPLATE_API_KEY     = "your_api_key_here"
+        `$env:APITEMPLATE_TEMPLATE_ID = "your_template_id_here"
+        `$env:APITEMPLATE_REGION      = "us"   # or de / au / sg
 
-    Then reload: . `$PROFILE
+        Then reload: . `$PROFILE
 
-  -- Or set them for the current session only ----------------------
+    -- Or set them for the current session only ----------------------
 
-      `$env:APITEMPLATE_API_KEY     = "your_api_key_here"
-      `$env:APITEMPLATE_TEMPLATE_ID = "your_template_id_here"
+        `$env:APITEMPLATE_API_KEY     = "your_api_key_here"
+        `$env:APITEMPLATE_TEMPLATE_ID = "your_template_id_here"
 "@
         return
     }
