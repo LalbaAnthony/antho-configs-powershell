@@ -166,31 +166,34 @@ function dnuke {
 # =================================================================================
 # apitemplate.io
 # =================================================================================
+
+# https://apitemplate.io/blog/how-to-turn-markdown-into-pdfs/
+
 function mdtopdf {
+    <#
+    .SYNOPSIS
+        Convert a Markdown file to PDF via the APITemplate.io API.
+    .PARAMETER Path
+        Path to the input .md / .markdown file.
+    .EXAMPLE
+        mdtopdf .\README.md
+        mdtopdf C:\docs\spec.md
+    #>
+    [CmdletBinding()]
     param (
-        [Parameter(Mandatory = $true, Position = 0)]
-        [string] $File
+        [Parameter(Mandatory, Position = 0)]
+        [string] $Path
     )
 
-    # -- Config -----------------------------------------------------------------
+    # -- Config guard --------------------------------------------------------
 
-    $API_KEY     = $env:APITEMPLATE_API_KEY
-    $TEMPLATE_ID = $env:APITEMPLATE_TEMPLATE_ID
-    $REGION      = if ($env:APITEMPLATE_REGION) { $env:APITEMPLATE_REGION } else { 'us' }
+    $apiKey     = $env:APITEMPLATE_API_KEY
+    $templateId = $env:APITEMPLATE_TEMPLATE_ID
+    $region     = if ($env:APITEMPLATE_REGION) { $env:APITEMPLATE_REGION } else { 'us' }
 
-    $REGION_HOSTS = @{
-        us = 'rest.apitemplate.io'
-        de = 'rest-de.apitemplate.io'
-        au = 'rest-au.apitemplate.io'
-        sg = 'rest-sg.apitemplate.io'
-    }
-
-    # -- Guard: missing credentials ---------------------------------------------
-
-    if ([string]::IsNullOrWhiteSpace($API_KEY) -or [string]::IsNullOrWhiteSpace($TEMPLATE_ID)) {
+    if (-not $apiKey -or -not $templateId) {
         Write-Host @"
-
-  mdtopdf — missing configuration
+  mdtopdf - missing configuration
   ----------------------------------------------------------------
 
   Two environment variables are required:
@@ -224,67 +227,101 @@ function mdtopdf {
 
       `$env:APITEMPLATE_API_KEY     = "your_api_key_here"
       `$env:APITEMPLATE_TEMPLATE_ID = "your_template_id_here"
-
-"@ -ForegroundColor Yellow
+"@
         return
     }
 
-    # -- Guard: invalid region --------------------------------------------------
+    # -- Input validation ----------------------------------------------------
 
-    if ($REGION -notin $REGION_HOSTS.Keys) {
-        Write-Error "Invalid APITEMPLATE_REGION '$REGION'. Must be: $($REGION_HOSTS.Keys -join ' | ')"
+    $resolvedPath = Resolve-Path -LiteralPath $Path -ErrorAction SilentlyContinue
+    if (-not $resolvedPath) {
+        Write-Error "File not found: $Path"
         return
     }
 
-    # -- Guard: file exists -----------------------------------------------------
+    $file = Get-Item -LiteralPath $resolvedPath.Path
+    if ($file.Extension -notin @('.md', '.markdown')) {
+        Write-Warning "File extension is '$($file.Extension)' - expected .md or .markdown. Proceeding anyway."
+    }
 
-    if (-not (Test-Path $File -PathType Leaf)) {
-        Write-Error "File not found: $File"
+    # -- Output path  →  <stem>_<YYYY-MM-DD>.pdf -----------------------------
+
+    $outputPath = Join-Path $file.DirectoryName (
+        '{0}_{1}.pdf' -f [System.IO.Path]::GetFileNameWithoutExtension($file.Name),
+                         (Get-Date -Format 'yyyy-MM-dd')
+    )
+
+    # -- Regional endpoint ---------------------------------------------------
+
+    $baseUrl = @{
+        us = 'https://rest.apitemplate.io'
+        de = 'https://rest-de.apitemplate.io'
+        au = 'https://rest-au.apitemplate.io'
+        sg = 'https://rest-sg.apitemplate.io'
+    }[$region.ToLower()]
+
+    if (-not $baseUrl) {
+        Write-Error "Unknown region '$region'. Valid values: us | de | au | sg"
         return
     }
 
-    # -- Paths ------------------------------------------------------------------
+    # -- Read + normalise content --------------------------------------------
+    # Read as bytes then decode as UTF-8 to avoid BOM / Windows encoding issues.
+    # Normalise CRLF → LF so the remote markdown parser handles line breaks correctly.
 
-    $resolved   = (Resolve-Path $File).Path
-    $directory  = Split-Path $resolved -Parent
-    $baseName   = [System.IO.Path]::GetFileNameWithoutExtension($resolved)
-    $outputPath = Join-Path $directory "${baseName}_$(Get-Date -Format 'yyyy-MM-dd').pdf"
-    $createUrl  = "https://$($REGION_HOSTS[$REGION])/v2/create-pdf?template_id=$TEMPLATE_ID"
+    $rawBytes       = [System.IO.File]::ReadAllBytes($file.FullName)
+    $markdownContent = [System.Text.Encoding]::UTF8.GetString($rawBytes) -replace "`r`n", "`n" -replace "`r", "`n"
 
-    # -- Convert ----------------------------------------------------------------
+    # -- Build and encode body as UTF-8 bytes --------------------------------
+    # ConvertTo-Json escapes the string correctly; explicit UTF-8 byte array
+    # prevents Invoke-RestMethod from silently re-encoding on non-UTF8 systems.
 
-    Write-Host "[1/3] Reading '$resolved'..."
-    $markdown = Get-Content -Path $resolved -Raw -Encoding UTF8
+    $bodyJson  = @{ markdown = $markdownContent } | ConvertTo-Json -Depth 2 -Compress
+    $bodyBytes = [System.Text.Encoding]::UTF8.GetBytes($bodyJson)
 
-    Write-Host "[2/3] Sending to APITemplate.io ($REGION)..."
+    # -- API call ------------------------------------------------------------
+
+    Write-Host "Sending '$($file.Name)' to APITemplate.io ($region)..."
 
     try {
         $response = Invoke-RestMethod `
-            -Method Post `
-            -Uri $createUrl `
-            -Headers @{ 'X-API-KEY' = $API_KEY; 'Content-Type' = 'application/json' } `
-            -Body (@{ markdown = $markdown } | ConvertTo-Json -Depth 5) `
-            -TimeoutSec 60
+            -Method      Post `
+            -Uri         "${baseUrl}/v2/create-pdf?template_id=${templateId}" `
+            -Headers     @{ 'X-API-KEY' = $apiKey } `
+            -Body        $bodyBytes `
+            -ContentType 'application/json; charset=utf-8' `
+            -ErrorAction Stop
     } catch {
-        $statusCode = if ($_.Exception.Response) { [int]$_.Exception.Response.StatusCode } else { 'N/A' }
-        $detail     = if ($_.ErrorDetails) { $_.ErrorDetails.Message } else { $_.Exception.Message }
-        Write-Error "API request failed (HTTP $statusCode).`n$detail"
+        $code = $_.Exception.Response.StatusCode.value__
+        switch ($code) {
+            401     { Write-Error "Authentication failed (401). Verify APITEMPLATE_API_KEY." }
+            404     { Write-Error "Template not found (404). Verify APITEMPLATE_TEMPLATE_ID." }
+            429     { Write-Error "Rate limit exceeded (429). Wait before retrying." }
+            default { Write-Error "API call failed (HTTP $code).`n$($_.ErrorDetails.Message)" }
+        }
         return
     }
+
+    # -- Validate response ---------------------------------------------------
 
     if (-not $response.download_url) {
-        Write-Error "Unexpected API response (no download_url).`n$($response | ConvertTo-Json)"
+        Write-Error "Unexpected API response - 'download_url' missing.`n$($response | ConvertTo-Json)"
         return
     }
 
-    Write-Host "[3/3] Saving '$outputPath'..."
+    if ($response.status -and $response.status -ne 'success') {
+        Write-Error "API returned non-success status: '$($response.status)'`n$($response | ConvertTo-Json)"
+        return
+    }
+
+    # -- Download ------------------------------------------------------------
 
     try {
-        Invoke-WebRequest -Uri $response.download_url -OutFile $outputPath -TimeoutSec 60
+        Invoke-WebRequest -Uri $response.download_url -OutFile $outputPath -ErrorAction Stop
     } catch {
-        Write-Error "Download failed: $_"
+        Write-Error "Failed to download PDF from '$($response.download_url)'.`n$_"
         return
     }
 
-    Write-Host "Done -> $outputPath ($([math]::Round((Get-Item $outputPath).Length / 1KB, 1)) KB)" -ForegroundColor Green
+    Write-Host "PDF saved: $outputPath"
 }
