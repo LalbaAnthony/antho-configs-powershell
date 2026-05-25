@@ -19,9 +19,9 @@ function again { Invoke-History }
 function h { Get-History -Count 30 }
 
 # PowerShell
-function pseu() { Invoke-RestMethod https://raw.githubusercontent.com/LalbaAnthony/antho-configs-powershell/main/install.ps1 | iex }
-function profile_extra_update() { Invoke-RestMethod https://raw.githubusercontent.com/LalbaAnthony/antho-configs-powershell/main/install.ps1 | iex }
-function profile_extra_uninstall() { Invoke-RestMethod https://raw.githubusercontent.com/LalbaAnthony/antho-configs-powershell/main/uninstall.ps1 | iex }
+function pseu() { Invoke-RestMethod https://raw.githubusercontent.com/LalbaAnthony/antho-configs-powershell/main/install.ps1 | Invoke-Expression }
+function profile_extra_update() { Invoke-RestMethod https://raw.githubusercontent.com/LalbaAnthony/antho-configs-powershell/main/install.ps1 | Invoke-Expression }
+function profile_extra_uninstall() { Invoke-RestMethod https://raw.githubusercontent.com/LalbaAnthony/antho-configs-powershell/main/uninstall.ps1 | Invoke-Expression }
 
 function mkcd {
     param($path)
