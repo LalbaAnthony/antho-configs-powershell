@@ -163,6 +163,19 @@ function dnuke {
     Write-Host "Docker environment wiped."
 }
 
+function ddown {
+    $ids = @(docker ps -aq 2>$null)
+
+    if ($ids.Count -eq 0) {
+        Write-Host "No containers running."
+        return
+    }
+
+    Write-Host "Stopping $($ids.Count) container(s)..."
+    docker stop $ids
+    Write-Host "All containers stopped."
+}
+
 # =================================================================================
 # apitemplate.io
 # =================================================================================
