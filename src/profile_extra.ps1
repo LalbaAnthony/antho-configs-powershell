@@ -13,10 +13,18 @@ function .. { Set-Location .. }
 function ... { Set-Location ../.. }
 function .... { Set-Location ../../.. }
 function ..... { Set-Location ../../../.. }
+function prjt { 
+    $projectPath = Join-Path $env:USERPROFILE 'projects'
+    if (Test-Path $projectPath) {
+        Set-Location $projectPath
+    }
+    else {
+        Write-Host "Folder not found at '$projectPath'"
+    }
+}
 
 # Random
 function again { Invoke-History }
-function h { Get-History -Count 30 }
 
 # PowerShell
 function pseu() { Invoke-RestMethod https://raw.githubusercontent.com/LalbaAnthony/antho-configs-powershell/main/install.ps1 | Invoke-Expression }
@@ -141,6 +149,23 @@ function denv {
     docker exec -it $container env
 }
 
+function derase {
+    Write-Host "WARNING: This will destroy ALL Docker volumes."
+    Write-Host "Current state:"
+    Write-Host "  Volumes:    $(@(docker volume ls -q 2>$null).Count)"
+    Write-Host ""
+    $confirm = Read-Host "Type 'ERASE' to confirm"
+
+    if ($confirm -ne 'ERASE') {
+        Write-Host "Aborted."
+        return
+    }
+
+    docker volume rm $(docker volume ls -q) 2>$null
+
+    Write-Host "All Docker volumes removed."
+}
+
 function dnuke {
     Write-Host "WARNING: This will destroy ALL Docker containers, images, volumes, networks, and build cache."
     Write-Host "Current state:"
@@ -235,11 +260,6 @@ function mdtopdf {
         `$env:APITEMPLATE_REGION      = "us"   # or de / au / sg
 
         Then reload: . `$PROFILE
-
-    -- Or set them for the current session only ----------------------
-
-        `$env:APITEMPLATE_API_KEY     = "your_api_key_here"
-        `$env:APITEMPLATE_TEMPLATE_ID = "your_template_id_here"
 "@
         return
     }
