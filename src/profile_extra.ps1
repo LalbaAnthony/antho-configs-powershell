@@ -119,14 +119,16 @@ function gdrag {
 # Claude
 # =================================================================================
 
-function claudepull {
+function claudesync {
     $claudePath = Join-Path $env:USERPROFILE '.claude'
-    
+
     if (Test-Path $claudePath) {
-        Push-Location
-        Set-Location $claudePath
-        git pull
-        Pop-Location
+        $timestamp = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
+        git -C $claudePath pull
+        git -C $claudePath add .
+        git -C $claudePath commit -m "Sync $timestamp"
+        if ($LASTEXITCODE -ne 0) { Write-Host "No changes to commit" }
+        git -C $claudePath push
     }
     else {
         Write-Host "Claude folder not found at '$claudePath'"
