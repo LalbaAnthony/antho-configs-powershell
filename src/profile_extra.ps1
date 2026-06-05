@@ -116,6 +116,24 @@ function gdrag {
 }
 
 # =================================================================================
+# Claude
+# =================================================================================
+
+function claudepull {
+    $claudePath = Join-Path $env:USERPROFILE '.claude'
+    
+    if (Test-Path $claudePath) {
+        Push-Location
+        Set-Location $claudePath
+        git pull
+        Pop-Location
+    }
+    else {
+        Write-Host "Claude folder not found at '$claudePath'"
+    }
+}
+
+# =================================================================================
 # Docker
 # =================================================================================
 
