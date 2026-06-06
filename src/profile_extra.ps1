@@ -7,6 +7,13 @@ function ll { Get-ChildItem -Force @args }
 function la { Get-ChildItem -Force -Name @args }
 function l { Get-ChildItem @args }
 function f { Get-ChildItem -Recurse -Filter $args[0] }
+function list_files {
+    param([string]$Path = '.')
+    $base = (Resolve-Path $Path).Path
+    Get-ChildItem -Path $base -Recurse -File | ForEach-Object {
+        $_.FullName.Substring($base.Length).TrimStart('\', '/')
+    }
+}
 
 # Navigation
 function .. { Set-Location .. }
