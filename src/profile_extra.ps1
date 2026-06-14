@@ -91,6 +91,21 @@ function gclean { git reset --hard; git clean -fd }
 function gtags { git tag -l --sort=-creatordate | Select-Object -First 10 }
 function gpf { git push --force-with-lease }
 
+function gclone {
+    param($repoUrl)
+
+    $repoName = [System.IO.Path]::GetFileNameWithoutExtension($repoUrl)
+    git clone $repoUrl
+
+    if ($LASTEXITCODE -eq 0) {
+        Set-Location $repoName
+        code .
+    }
+    else {
+        Write-Host "Failed to clone repository: $repoUrl"
+    }
+}
+
 function gacp {
     param($message)
     git add .
