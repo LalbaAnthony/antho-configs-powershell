@@ -78,6 +78,7 @@ function gc { git commit -m @args }
 function gp { git push }
 function gpo { git push origin @args }
 function gpl { git pull }
+function gplr { git pull --rebase }
 function gf { git fetch }
 function gplo { git pull origin @args }
 function gl { git log --oneline --graph --decorate --all }
