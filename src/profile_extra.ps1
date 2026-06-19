@@ -75,6 +75,16 @@ function mkcd {
 }
 
 # =================================================================================
+# Python
+# =================================================================================
+
+function pysetup {
+    python -m venv .venv
+    .\.venv\Scripts\activate
+    pip install -r requirements.txt
+}
+
+# =================================================================================
 # Node
 # =================================================================================
 
@@ -139,6 +149,8 @@ function gclone {
 
 function gacp {
     param($message)
+
+    git pull --rebase
     git add .
     git commit -m $message
     git push
