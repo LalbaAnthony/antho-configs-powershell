@@ -17,7 +17,7 @@ function prompt {
 
     # working directory
     Write-Host "$($executionContext.SessionState.Path.CurrentLocation)" `
-        -NoNewline -ForegroundColor Yellow
+        -NoNewline -ForegroundColor Gray
 
     # git branch
     $branch = git branch --show-current 2>$null
