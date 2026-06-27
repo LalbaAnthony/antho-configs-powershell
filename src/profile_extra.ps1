@@ -328,12 +328,12 @@ function mdtopdf {
     -- Get your API key ----------------------------------------------
 
         1. Sign up at https://app.apitemplate.io/accounts/signup/
-        2. Go to Dashboard → API Keys → copy your key
+        2. Go to Dashboard -> API Keys -> copy your key
 
     -- Create a compatible template ----------------------------------
 
-        1. Dashboard → Manage Templates → New PDF Template
-        2. Select "Markdown String to PDF" → Create
+        1. Dashboard -> Manage Templates -> New PDF Template
+        2. Select "Markdown String to PDF" -> Create
         3. Copy the template_id shown in the template list
 
     -- Set the variables permanently (PowerShell profile) ------------
@@ -362,7 +362,7 @@ function mdtopdf {
         Write-Warning "File extension is '$($file.Extension)' - expected .md or .markdown. Proceeding anyway."
     }
 
-    # -- Output path  →  <stem>_<YYYY-MM-DD>.pdf -----------------------------
+    # -- Output path  ->  <stem>_<YYYY-MM-DD>.pdf -----------------------------
 
     $outputPath = Join-Path $file.DirectoryName (
         '{0}_{1}.pdf' -f [System.IO.Path]::GetFileNameWithoutExtension($file.Name),
@@ -385,7 +385,7 @@ function mdtopdf {
 
     # -- Read + normalise content --------------------------------------------
     # Read as bytes then decode as UTF-8 to avoid BOM / Windows encoding issues.
-    # Normalise CRLF → LF so the remote markdown parser handles line breaks correctly.
+    # Normalise CRLF -> LF so the remote markdown parser handles line breaks correctly.
 
     $rawBytes       = [System.IO.File]::ReadAllBytes($file.FullName)
     $markdownContent = [System.Text.Encoding]::UTF8.GetString($rawBytes) -replace "`r`n", "`n" -replace "`r", "`n"
