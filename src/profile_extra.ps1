@@ -132,6 +132,20 @@ function gclean { git reset --hard; git clean -fd }
 function gtags { git tag -l --sort=-creatordate | Select-Object -First 10 }
 function gpf { git push --force-with-lease }
 
+function gdel { 
+    param($branchName)
+
+    if (-not $branchName) {
+        Write-Host "Usage: gdel <branch_name>"
+        return
+    }
+
+    git branch -D $branchName
+    if ($LASTEXITCODE -eq 0) {
+        git push origin --delete $branchName
+    }
+}
+
 function gclone {
     param($repoUrl)
 
