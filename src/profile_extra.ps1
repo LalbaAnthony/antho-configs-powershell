@@ -141,9 +141,7 @@ function gdel {
     }
 
     git branch -D $branchName
-    if ($LASTEXITCODE -eq 0) {
-        git push origin --delete $branchName
-    }
+    git push origin --delete $branchName
 }
 
 function gclone {
@@ -163,8 +161,11 @@ function gclone {
 
 function gacp {
     param($message)
+    if (-not $contmessageainer) {
+        Write-Host "Usage: gacp <commit_message>"
+        return
+    }
 
-    git pull --rebase
     git add .
     git commit -m $message
     git push
