@@ -161,7 +161,7 @@ function gclone {
 
 function gacp {
     param($message)
-    if (-not $contmessageainer) {
+    if (-not $message) {
         Write-Host "Usage: gacp <commit_message>"
         return
     }
