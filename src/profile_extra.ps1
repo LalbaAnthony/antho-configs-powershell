@@ -333,35 +333,68 @@ function mdclean {
 
     $content = [System.IO.File]::ReadAllText($file.FullName, [System.Text.Encoding]::UTF8)
 
-    # Typography replacements (must run before emoji strip: arrows/math symbols
-    # sit near the symbol blocks the emoji pattern removes).
-    # \uXXXX regex escapes keep this file ASCII-safe regardless of profile encoding.
-    $content = $content -replace ' \u2014 ', ', '                   # " em-dash " -> ", "
-    $content = $content -replace '\u2026', '...'                    # ellipsis
-    $content = $content -replace '\u0153', 'oe'                     # oe ligature
-    $content = $content -replace '\u0152', 'Oe'                     # OE ligature
-    $content = $content -replace '\u2248', '~='                     # almost equal
-    $content = $content -replace '\u2192', '->'                     # right arrow
-    $content = $content -replace '[\u2018\u2019]', "'"              # curly single quotes
-    $content = $content -replace '[\u201C\u201D\u00AB\u00BB]', '"'  # curly double quotes + guillemets
-    $content = $content -replace '\u2265', '>='                     # greater-or-equal
-    $content = $content -replace '\u2264', '<='                     # less-or-equal
-    $content = $content -replace '\u21D2', '=>'                     # double right arrow
-    $content = $content -replace '[\u21D4\u2194]', '<=>'            # double / double-headed arrow
-
-    # Emojis: astral-plane chars (surrogate pairs) + BMP symbol/dingbat blocks,
-    # variation selector, ZWJ, keycap combiner - plus one space on the right
-    $content = $content -replace '(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[\u2300-\u23FF\u2600-\u27BF\u2B00-\u2BFF\uFE0F\u200D\u20E3])+ ?', ''
-
-    # Normalize newlines, trim trailing whitespace only (leading whitespace is
-    # significant in Markdown: nested lists, indented code blocks), drop --- lines
+    # Normalize newlines up front; processing is line-based so fenced code
+    # blocks can be passed through untouched
     $content = $content -replace "`r`n", "`n" -replace "`r", "`n"
-    $lines = $content -split "`n" | ForEach-Object { $_.TrimEnd() } | Where-Object { $_ -ne '---' }
-    $content = $lines -join "`n"
 
-    # Collapse 3+ consecutive newlines into 2 (max one blank line)
-    $content = $content -replace "`n{3,}", "`n`n"
-    $content = ($content -replace '^\n+', '').TrimEnd() + "`n"
+    $out = [System.Collections.Generic.List[string]]::new()
+    $inFence = $false
+
+    foreach ($rawLine in ($content -split "`n")) {
+        # Fenced code blocks (``` / ~~~): keep content byte-for-byte
+        if ($inFence) {
+            $out.Add($rawLine)
+            if ($rawLine -match '^\s*(```|~~~)\s*$') { $inFence = $false }
+            continue
+        }
+        if ($rawLine -match '^\s*(```|~~~)') {
+            $inFence = $true
+            $out.Add($rawLine.TrimEnd())
+            continue
+        }
+
+        $line = $rawLine
+
+        # Typography replacements (before emoji strip: arrows/math symbols sit
+        # near the symbol blocks the emoji pattern removes).
+        # \uXXXX regex escapes keep this file ASCII-safe regardless of profile encoding.
+        $line = $line -replace ' \u2014 ', ', '                   # " em-dash " -> ", "
+        $line = $line -replace '\u2026', '...'                    # ellipsis
+        $line = $line -replace '\u0153', 'oe'                     # oe ligature
+        $line = $line -replace '\u0152', 'Oe'                     # OE ligature
+        $line = $line -replace '\u2248', '~='                     # almost equal
+        $line = $line -replace '\u2192', '->'                     # right arrow
+        $line = $line -replace '[\u2018\u2019]', "'"              # curly single quotes
+        $line = $line -replace '[\u201C\u201D\u00AB\u00BB]', '"'  # curly double quotes + guillemets
+        $line = $line -replace '\u2265', '>='                     # greater-or-equal
+        $line = $line -replace '\u2264', '<='                     # less-or-equal
+        $line = $line -replace '\u21D2', '=>'                     # double right arrow
+        $line = $line -replace '[\u21D4\u2194]', '<=>'            # double / double-headed arrow
+
+        # Emojis: astral-plane chars (surrogate pairs) + BMP symbol/dingbat blocks,
+        # variation selector, ZWJ, keycap combiner - plus one space on the right
+        $line = $line -replace '(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[\u2300-\u23FF\u2600-\u27BF\u2B00-\u2BFF\uFE0F\u200D\u20E3])+ ?', ''
+
+        # Trailing whitespace only: leading indent is significant in Markdown
+        # (nested lists, indented code blocks)
+        $line = $line.TrimEnd()
+
+        # Remove only actual horizontal rules: a '---' preceded by a blank line.
+        # A '---' directly under text is a setext heading or a table separator,
+        # and one on the very first line opens YAML frontmatter - keep those.
+        if ($line -eq '---' -and $out.Count -gt 0 -and $out[$out.Count - 1] -eq '') {
+            continue
+        }
+
+        # Collapse runs of blank lines into a single blank line
+        if ($line -eq '' -and $out.Count -gt 0 -and $out[$out.Count - 1] -eq '') {
+            continue
+        }
+
+        $out.Add($line)
+    }
+
+    $content = ($out -join "`n" -replace '^\n+', '').TrimEnd() + "`n"
 
     [System.IO.File]::WriteAllText($file.FullName, $content, [System.Text.UTF8Encoding]::new($false))
     Write-Host "Cleaned: $($file.FullName)"
