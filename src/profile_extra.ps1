@@ -302,6 +302,71 @@ function ddown {
 }
 
 # =================================================================================
+# AI
+# =================================================================================
+
+function mdclean {
+    <#
+    .SYNOPSIS
+        Clean a Markdown file in place: strip emojis, normalize AI-style typography, remove bold markers and extra blank lines.
+    .PARAMETER Path
+        Path to the input .md / .markdown file.
+    .EXAMPLE
+        mdclean .\README.md
+    #>
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory, Position = 0)]
+        [string] $Path
+    )
+
+    $resolvedPath = Resolve-Path -LiteralPath $Path -ErrorAction SilentlyContinue
+    if (-not $resolvedPath) {
+        Write-Error "File not found: $Path"
+        return
+    }
+
+    $file = Get-Item -LiteralPath $resolvedPath.Path
+    if ($file.Extension -notin @('.md', '.markdown')) {
+        Write-Warning "File extension is '$($file.Extension)' - expected .md or .markdown. Proceeding anyway."
+    }
+
+    $content = [System.IO.File]::ReadAllText($file.FullName, [System.Text.Encoding]::UTF8)
+
+    # Typography replacements (must run before emoji strip: arrows/math symbols
+    # sit near the symbol blocks the emoji pattern removes).
+    # \uXXXX regex escapes keep this file ASCII-safe regardless of profile encoding.
+    $content = $content -replace ' \u2014 ', ', '                   # " em-dash " -> ", "
+    $content = $content -replace '\u2026', '...'                    # ellipsis
+    $content = $content -replace '\u0153', 'oe'                     # oe ligature
+    $content = $content -replace '\u0152', 'Oe'                     # OE ligature
+    $content = $content -replace '\u2248', '~='                     # almost equal
+    $content = $content -replace '\u2192', '->'                     # right arrow
+    $content = $content -replace '[\u2018\u2019]', "'"              # curly single quotes
+    $content = $content -replace '[\u201C\u201D\u00AB\u00BB]', '"'  # curly double quotes + guillemets
+    $content = $content -replace '\u2265', '>='                     # greater-or-equal
+    $content = $content -replace '\u2264', '<='                     # less-or-equal
+    $content = $content -replace '\u21D2', '=>'                     # double right arrow
+    $content = $content -replace '[\u21D4\u2194]', '<=>'            # double / double-headed arrow
+
+    # Emojis: astral-plane chars (surrogate pairs) + BMP symbol/dingbat blocks,
+    # variation selector, ZWJ, keycap combiner - plus one space on the right
+    $content = $content -replace '(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[\u2300-\u23FF\u2600-\u27BF\u2B00-\u2BFF\uFE0F\u200D\u20E3])+ ?', ''
+
+    # Normalize newlines, trim each line, drop --- lines
+    $content = $content -replace "`r`n", "`n" -replace "`r", "`n"
+    $lines = $content -split "`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '---' }
+    $content = $lines -join "`n"
+
+    # Collapse 3+ consecutive newlines into 2 (max one blank line)
+    $content = $content -replace "`n{3,}", "`n`n"
+    $content = $content.Trim() + "`n"
+
+    [System.IO.File]::WriteAllText($file.FullName, $content, [System.Text.UTF8Encoding]::new($false))
+    Write-Host "Cleaned: $($file.FullName)"
+}
+
+# =================================================================================
 # apitemplate.io
 # =================================================================================
 
