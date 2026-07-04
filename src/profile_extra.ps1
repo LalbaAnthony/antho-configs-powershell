@@ -353,14 +353,15 @@ function mdclean {
     # variation selector, ZWJ, keycap combiner - plus one space on the right
     $content = $content -replace '(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[\u2300-\u23FF\u2600-\u27BF\u2B00-\u2BFF\uFE0F\u200D\u20E3])+ ?', ''
 
-    # Normalize newlines, trim each line, drop --- lines
+    # Normalize newlines, trim trailing whitespace only (leading whitespace is
+    # significant in Markdown: nested lists, indented code blocks), drop --- lines
     $content = $content -replace "`r`n", "`n" -replace "`r", "`n"
-    $lines = $content -split "`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '---' }
+    $lines = $content -split "`n" | ForEach-Object { $_.TrimEnd() } | Where-Object { $_ -ne '---' }
     $content = $lines -join "`n"
 
     # Collapse 3+ consecutive newlines into 2 (max one blank line)
     $content = $content -replace "`n{3,}", "`n`n"
-    $content = $content.Trim() + "`n"
+    $content = ($content -replace '^\n+', '').TrimEnd() + "`n"
 
     [System.IO.File]::WriteAllText($file.FullName, $content, [System.Text.UTF8Encoding]::new($false))
     Write-Host "Cleaned: $($file.FullName)"
