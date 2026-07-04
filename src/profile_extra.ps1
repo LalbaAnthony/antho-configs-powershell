@@ -204,7 +204,7 @@ function claudesync {
 
     if (Test-Path $claudePath) {
         $timestamp = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
-        git -C $claudePath pull
+        git -C $claudePath pull --rebase
         git -C $claudePath add .
         git -C $claudePath commit -m "Sync $timestamp"
         if ($LASTEXITCODE -ne 0) { Write-Host "No changes to commit" }
