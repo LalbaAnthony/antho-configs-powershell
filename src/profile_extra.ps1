@@ -224,7 +224,6 @@ function dps { docker ps }
 function dpa { docker ps -a }
 function drm { docker rm -f @args }
 function dim { docker images }
-function dlog { docker logs -f @args }
 function dclean { docker system prune -af --volumes }
 function drestart { docker restart $(docker ps -q) }
 
@@ -237,6 +236,16 @@ function dexec {
 
     docker exec -it $container /bin/bash
     if ($LASTEXITCODE -ne 0) { docker exec -it $container /bin/sh }
+}
+
+function dlogs {
+    param($container)
+    if (-not $container) {
+        Write-Host "Usage: dlogs <container_name_or_id>"
+        return
+    }
+
+    docker logs -f $container
 }
 
 function denv {
