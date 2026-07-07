@@ -374,7 +374,7 @@ function mdclean {
         $line = $line -replace '\u2248', '~='                     # almost equal
         $line = $line -replace '\u2192', '->'                     # right arrow
         $line = $line -replace '[\u2018\u2019]', "'"              # curly single quotes
-        $line = $line -replace '[\u201C\u201D\u00AB\u00BB]', '"'  # curly double quotes + guillemets
+        # $line = $line -replace '[\u201C\u201D\u00AB\u00BB]', '"'  # curly double quotes + guillemets # TODO replace with space
         $line = $line -replace '\u2265', '>='                     # greater-or-equal
         $line = $line -replace '\u2264', '<='                     # less-or-equal
         $line = $line -replace '\u21D2', '=>'                     # double right arrow
