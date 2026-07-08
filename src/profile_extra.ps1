@@ -132,11 +132,11 @@ function gclean { git reset --hard; git clean -fd }
 function gtags { git tag -l --sort=-creatordate | Select-Object -First 10 }
 function gpf { git push --force-with-lease }
 
-function gdel { 
+function gbdel { 
     param($branchName)
 
     if (-not $branchName) {
-        Write-Host "Usage: gdel <branch_name>"
+        Write-Host "Usage: gbdel <branch_name>"
         return
     }
 
