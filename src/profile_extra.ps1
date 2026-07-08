@@ -573,13 +573,13 @@ function mdtopdf {
 
 function gyc {
     $scriptPaths = @(
-        (Join-Path $env:USERPROFILE 'projects\antho-tools\git\scripts\git_sync_on_multiple_projects.py')
+        (Join-Path $env:USERPROFILE 'projects\antho-tools\git\scripts\git_sync_projects.py')
     )
 
     $scriptPath = $scriptPaths | Where-Object { Test-Path $_ } | Select-Object -First 1
 
     if (-not $scriptPath) {
-        Write-Host "git_sync_on_multiple_projects.py script not found."
+        Write-Host "git_sync_projects.py script not found."
         return
     }
 
