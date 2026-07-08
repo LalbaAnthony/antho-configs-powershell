@@ -571,7 +571,7 @@ function mdtopdf {
 # Scripts shortcuts
 # =================================================================================
 
-function gsync {
+function gyc {
     $scriptPaths = @(
         'C:\Users\Antho\projects\antho-tools\git\scripts\git_sync_on_multiple_projects.py'
         'C:\Users\a.lalba\projects\antho-tools\git\scripts\git_sync_on_multiple_projects.py'
