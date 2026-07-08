@@ -573,8 +573,7 @@ function mdtopdf {
 
 function gyc {
     $scriptPaths = @(
-        'C:\Users\Antho\projects\antho-tools\git\scripts\git_sync_on_multiple_projects.py'
-        'C:\Users\a.lalba\projects\antho-tools\git\scripts\git_sync_on_multiple_projects.py'
+        (Join-Path $env:USERPROFILE 'projects\antho-tools\git\scripts\git_sync_on_multiple_projects.py')
     )
 
     $scriptPath = $scriptPaths | Where-Object { Test-Path $_ } | Select-Object -First 1
@@ -589,8 +588,7 @@ function gyc {
 
 function fzc {
     $scriptPaths = @(
-        'C:\Users\Antho\projects\filezilla-companion\src\main.py'
-        'C:\Users\a.lalba\projects\filezilla-companion\src\main.py'
+        (Join-Path $env:USERPROFILE 'projects\filezilla-companion\src\main.py')
     )
 
     $scriptPath = $scriptPaths | Where-Object { Test-Path $_ } | Select-Object -First 1
