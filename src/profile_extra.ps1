@@ -566,3 +566,39 @@ function mdtopdf {
 
     Write-Host "PDF saved: $outputPath"
 }
+
+# =================================================================================
+# Scripts shortcuts
+# =================================================================================
+
+function gsync {
+    $scriptPaths = @(
+        'C:\Users\Antho\projects\antho-tools\git\scripts\git_sync_on_multiple_projects.py'
+        'C:\Users\a.lalba\projects\antho-tools\git\scripts\git_sync_on_multiple_projects.py'
+    )
+
+    $scriptPath = $scriptPaths | Where-Object { Test-Path $_ } | Select-Object -First 1
+
+    if (-not $scriptPath) {
+        Write-Host "git_sync_on_multiple_projects.py script not found."
+        return
+    }
+
+    python $scriptPath
+}
+
+function fzc {
+    $scriptPaths = @(
+        'C:\Users\Antho\projects\filezilla-companion\src\main.py'
+        'C:\Users\a.lalba\projects\filezilla-companion\src\main.py'
+    )
+
+    $scriptPath = $scriptPaths | Where-Object { Test-Path $_ } | Select-Object -First 1
+
+    if (-not $scriptPath) {
+        Write-Host "FileZilla Companion script not found."
+        return
+    }
+
+    python $scriptPath
+}
