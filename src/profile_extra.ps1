@@ -674,7 +674,7 @@ function mdtopdf {
 
 function gyc {
     $scriptPaths = @(
-        (Join-Path $env:USERPROFILE 'projects\antho-tools\git\scripts\git_sync_projects.py')
+        (Join-Path $env:USERPROFILE 'projects\antho-scripts\git\git_sync_projects.py')
     )
 
     $scriptPath = $scriptPaths | Where-Object { Test-Path $_ } | Select-Object -First 1
