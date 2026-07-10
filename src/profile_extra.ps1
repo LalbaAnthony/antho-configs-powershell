@@ -121,7 +121,7 @@ function gpl { git pull }
 function gplr { git pull --rebase }
 function gf { git fetch }
 function gplo { git pull origin @args }
-function ggrph { git log --oneline --graph --decorate --all }
+function gph { git log --oneline --graph --decorate --all }
 function gd { git diff "origin/$(git rev-parse --abbrev-ref HEAD)" }
 function gds { git diff --shortstat "origin/$(git rev-parse --abbrev-ref HEAD)" }
 function gco { git checkout @args }
