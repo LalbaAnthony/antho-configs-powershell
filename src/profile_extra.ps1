@@ -171,6 +171,16 @@ function gacp {
     git push
 }
 
+function groot {
+    $root = git rev-parse --show-toplevel 2>$null
+    if ($LASTEXITCODE -eq 0) {
+        Set-Location $root
+    }
+    else {
+        Write-Host "Not a git repository."
+    }
+}
+
 function gbranch {
     $branches = git branch | ForEach-Object { $_.TrimStart('* ').Trim() }
     $i = 1
