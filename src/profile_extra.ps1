@@ -217,12 +217,12 @@ function claudesync {
     $claudePath = Join-Path $env:USERPROFILE '.claude'
     $gitDir = Join-Path $claudePath '.git'
 
+    function step($msg) { Write-Host "claudesync: $msg" }
+
     if (-not (Test-Path $gitDir)) {
-        Write-Host "claudesync: no git repository at '$claudePath'"
+        step "no git repository at '$claudePath'"
         return
     }
-
-    function step($msg) { Write-Host "claudesync: $msg" }
 
     # -- 0. Heal state left behind by a previously interrupted sync ----------
     # A half-finished rebase/merge makes every later git command fail, which
