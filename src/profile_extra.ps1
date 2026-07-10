@@ -200,19 +200,119 @@ function gdrag {
 # =================================================================================
 
 function claudesync {
-    $claudePath = Join-Path $env:USERPROFILE '.claude'
+    <#
+    .SYNOPSIS
+        Sync ~/.claude with its git remote, self-healing.
+        Order matters: heal stale state -> commit local -> fetch -> integrate
+        (rebase, then merge, then conflict-proof overlay) -> push with retries.
+        Conflict policy: on a same-line conflict, THIS machine wins.
+    .PARAMETER Message
+        Optional commit message (default: "sync(HOST): timestamp").
+    #>
+    [CmdletBinding()]
+    param (
+        [string] $Message
+    )
 
-    if (Test-Path $claudePath) {
-        $timestamp = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
-        git -C $claudePath pull --rebase
-        git -C $claudePath add .
-        git -C $claudePath commit -m "Sync $timestamp"
-        if ($LASTEXITCODE -ne 0) { Write-Host "No changes to commit" }
-        git -C $claudePath push
+    $claudePath = Join-Path $env:USERPROFILE '.claude'
+    $gitDir = Join-Path $claudePath '.git'
+
+    if (-not (Test-Path $gitDir)) {
+        Write-Host "claudesync: no git repository at '$claudePath'"
+        return
     }
-    else {
-        Write-Host "Claude folder not found at '$claudePath'"
+
+    function step($msg) { Write-Host "claudesync: $msg" }
+
+    # -- 0. Heal state left behind by a previously interrupted sync ----------
+    # A half-finished rebase/merge makes every later git command fail, which
+    # is what made conflicts look "systematic".
+    if ((Test-Path (Join-Path $gitDir 'rebase-merge')) -or (Test-Path (Join-Path $gitDir 'rebase-apply'))) {
+        step "aborting stale rebase from a previous run"
+        git -C $claudePath rebase --abort 2>$null
     }
+    if (Test-Path (Join-Path $gitDir 'MERGE_HEAD')) {
+        step "aborting stale merge from a previous run"
+        git -C $claudePath merge --abort 2>$null
+    }
+
+    $branch = git -C $claudePath rev-parse --abbrev-ref HEAD
+    if ($LASTEXITCODE -ne 0 -or -not $branch) {
+        Write-Error "claudesync: cannot resolve current branch"
+        return
+    }
+
+    # -- 1. Commit local work BEFORE touching the remote ---------------------
+    # Rebasing a dirty tree was the root cause of the old failures.
+    git -C $claudePath add -A
+    if (git -C $claudePath status --porcelain) {
+        if (-not $Message) {
+            $Message = "sync($env:COMPUTERNAME): $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
+        }
+        git -C $claudePath commit -m $Message --quiet
+        step "committed local changes"
+    }
+
+    # -- 2. Fetch. Offline is fine: the commit stays local until next run ----
+    git -C $claudePath fetch origin --quiet 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        step "fetch failed (offline?) - changes are committed locally, will sync next run"
+        return
+    }
+
+    git -C $claudePath rev-parse --verify --quiet "origin/$branch" | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        step "no upstream yet, publishing '$branch'"
+        git -C $claudePath push -u origin $branch
+        return
+    }
+
+    # -- 3. Integrate the remote, escalating through 3 strategies ------------
+    $behind = [int](git -C $claudePath rev-list --count "HEAD..origin/$branch")
+    if ($behind -gt 0) {
+        # 3a. Rebase; "-X theirs" during a rebase = replayed LOCAL commits win
+        git -C $claudePath rebase "origin/$branch" -X theirs --quiet 2>$null
+        if ($LASTEXITCODE -ne 0) {
+            git -C $claudePath rebase --abort 2>$null
+
+            # 3b. Merge; "-X ours" during a merge = LOCAL branch wins
+            step "rebase failed, falling back to merge"
+            git -C $claudePath merge "origin/$branch" -X ours --no-edit --quiet 2>$null
+            if ($LASTEXITCODE -ne 0) {
+                git -C $claudePath merge --abort 2>$null
+
+                # 3c. Conflict-proof overlay: snapshot local state on a backup
+                # branch, adopt the remote history, then re-apply local files
+                # on top. Cannot conflict by construction; nothing is lost.
+                $backup = "backup/$($env:COMPUTERNAME.ToLower())-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+                step "merge failed, using overlay fallback (local snapshot on '$backup')"
+                git -C $claudePath branch $backup
+                git -C $claudePath reset --hard "origin/$branch" --quiet
+                git -C $claudePath checkout $backup -- .
+                git -C $claudePath add -A
+                git -C $claudePath commit -m "sync($env:COMPUTERNAME): overlay of local state" --quiet
+            }
+        }
+        step "integrated $behind remote commit(s)"
+    }
+
+    # -- 4. Push, retrying if another machine pushed in the meantime ---------
+    for ($attempt = 1; $attempt -le 3; $attempt++) {
+        git -C $claudePath push origin $branch --quiet 2>$null
+        if ($LASTEXITCODE -eq 0) {
+            step "synced ('$branch' up to date with origin)"
+            return
+        }
+        step "push rejected (concurrent push from another machine?), retry $attempt/3"
+        Start-Sleep -Seconds $attempt
+        git -C $claudePath fetch origin --quiet 2>$null
+        git -C $claudePath rebase "origin/$branch" -X theirs --quiet 2>$null
+        if ($LASTEXITCODE -ne 0) { git -C $claudePath rebase --abort 2>$null }
+    }
+
+    # Last attempt without silencing, so the real error is visible
+    git -C $claudePath push origin $branch
+    if ($LASTEXITCODE -ne 0) { Write-Error "claudesync: push failed after retries (see output above)" }
 }
 
 # =================================================================================
