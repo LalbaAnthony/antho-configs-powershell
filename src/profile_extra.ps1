@@ -332,7 +332,7 @@ function fzc {
         return
     }
 
-    python $scriptPath
+    Start-Process powershell -ArgumentList '-NoExit', '-Command', "python `"$scriptPath`""
 }
 
 function claudesync {
