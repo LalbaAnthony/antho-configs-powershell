@@ -166,6 +166,16 @@ function gacp {
         return
     }
 
+    $root = git rev-parse --show-toplevel 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Not a git repository."
+        return
+    }
+    if ((Get-Location).Path -ne (Resolve-Path $root).Path) {
+        Write-Host "Not at repo root ($root). Aborting."
+        return
+    }
+
     git add .
     git commit -m $message
     git push
