@@ -117,6 +117,7 @@ function ga { git add . }
 function gc { git commit -m @args }
 function gps { git push }
 function gpo { git push origin @args }
+function gck { git checkout @args }
 function gpl { git pull }
 function gplr { git pull --rebase }
 function gf { git fetch }
