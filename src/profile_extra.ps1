@@ -115,7 +115,7 @@ function ysetup {
 function gs { git status -sb }
 function ga { git add . }
 function gc { git commit -m @args }
-function gp { git push }
+function gps { git push }
 function gpo { git push origin @args }
 function gpl { git pull }
 function gplr { git pull --rebase }
