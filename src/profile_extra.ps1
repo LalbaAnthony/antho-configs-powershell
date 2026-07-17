@@ -64,9 +64,10 @@ function prjt {
 function again { Invoke-History }
 
 # PowerShell
-function pseu() { Invoke-RestMethod https://raw.githubusercontent.com/LalbaAnthony/antho-configs-powershell/main/install.ps1 | Invoke-Expression }
 function profile_extra_update() { Invoke-RestMethod https://raw.githubusercontent.com/LalbaAnthony/antho-configs-powershell/main/install.ps1 | Invoke-Expression }
 function profile_extra_uninstall() { Invoke-RestMethod https://raw.githubusercontent.com/LalbaAnthony/antho-configs-powershell/main/uninstall.ps1 | Invoke-Expression }
+function pseu() { Invoke-RestMethod https://raw.githubusercontent.com/LalbaAnthony/antho-configs-powershell/main/install.ps1 | Invoke-Expression }
+function psf() { Write-Host "Profile file: $PROFILE" }
 
 function mkcd {
     param($path)
