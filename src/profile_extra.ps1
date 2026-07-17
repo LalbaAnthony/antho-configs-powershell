@@ -132,17 +132,6 @@ function gclean { git reset --hard; git clean -fd }
 function gtags { git tag -l --sort=-creatordate | Select-Object -First 10 }
 function gpf { git push --force-with-lease }
 
-function gps {
-    param($remoteBranchName)
-
-    if (-not $remoteBranchName) {
-        Write-Host "Usage: gps <remote_branch_name>"
-        return
-    }
-
-    git push || git push --set-upstream origin $remoteBranchName
-}
-
 function gbdel { 
     param($branchName)
 
