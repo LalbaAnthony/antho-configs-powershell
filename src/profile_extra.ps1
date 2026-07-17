@@ -294,9 +294,11 @@ function dnuke {
     Write-Host "  Images:     $(@(docker images -q 2>$null).Count)"
     Write-Host "  Volumes:    $(@(docker volume ls -q 2>$null).Count)"
     Write-Host ""
-    $confirm = Read-Host "Type 'NUKE' to confirm"
 
-    if ($confirm -ne 'NUKE') {
+    $token = -join ((1..6) | ForEach-Object { [char][int]((65..90) + (48..57) | Get-Random) })
+    $confirm = Read-Host "Type '$token' to confirm"
+
+    if ($confirm -cne $token) {
         Write-Host "Aborted."
         return
     }
