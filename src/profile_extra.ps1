@@ -133,7 +133,23 @@ function gclean { git reset --hard; git clean -fd }
 function gtags { git tag -l --sort=-creatordate | Select-Object -First 10 }
 function gpf { git push --force-with-lease }
 
-function gbdel { 
+function grestore {
+    param($file, $commit)
+
+    if (-not $file) {
+        Write-Host "Usage: grestore <file_path> [commit_hash]"
+        return
+    }
+
+    if (-not $commit) {
+        git restore -- $file
+    }
+    else {
+        git restore --source $commit -- $file
+    }
+}
+
+function gbdel {
     param($branchName)
 
     if (-not $branchName) {
